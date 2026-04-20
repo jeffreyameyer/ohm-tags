@@ -16,6 +16,9 @@
     <property name="plugin.src.dir"   value="src"/>
     <property name="plugin.dist.dir"  value="dist"/>
     <property name="plugin.jar"       value="${plugin.dist.dir}/${ant.project.name}.jar"/>
+    <property name="test.src.dir"     value="test"/>
+    <property name="test.build.dir"   value="build-test"/>
+    <property name="test.data.file"   value="test/test_data.osm"/>
 
     <property name="ant.build.javac.target" value="11"/>
     <property name="ant.build.javac.source" value="11"/>
@@ -82,9 +85,37 @@
         <copy file="${plugin.jar}" todir="${josm.plugins.dir}"/>
     </target>
 
+    <target name="test-compile" depends="compile">
+        <mkdir dir="${test.build.dir}"/>
+        <javac srcdir="${test.src.dir}"
+               destdir="${test.build.dir}"
+               debug="true"
+               encoding="UTF-8"
+               includeantruntime="false">
+            <classpath>
+                <pathelement location="${josm}"/>
+                <pathelement location="${plugin.build.dir}"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <target name="test" depends="test-compile"
+            description="Run headless regression tests against test/test_data.osm">
+        <java classname="RunTests" fork="true" failonerror="true">
+            <classpath>
+                <pathelement location="${josm}"/>
+                <pathelement location="${plugin.build.dir}"/>
+                <pathelement location="${test.build.dir}"/>
+            </classpath>
+            <arg value="${test.data.file}"/>
+            <sysproperty key="java.awt.headless" value="true"/>
+        </java>
+    </target>
+
     <target name="clean">
         <delete dir="${plugin.build.dir}"/>
         <delete dir="${plugin.dist.dir}"/>
+        <delete dir="${test.build.dir}"/>
     </target>
 
 </project>
