@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Compile and run the regression test harness without requiring Ant.
+# Fallback test runner that does not require Ant. Prefer: ant test
 # Usage: ./run-tests.sh [path/to/test_data.osm]
 #
 # Exit 0 = harness ran successfully (findings in the data are expected).

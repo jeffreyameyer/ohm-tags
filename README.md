@@ -42,4 +42,6 @@ Both tests can be individually enabled or disabled in Preferences → Validator 
 
 ## Acknowledgments
 
+The date-normalization logic in this plugin is derived from [`utilEDTFFromOSMDateString()`](https://github.com/OpenHistoricalMap/iD/commit/4d5cb19c7f5e544fadf467e8fa4b4df3ad86ffbd) in the OpenHistoricalMap fork of the [iD editor](https://github.com/openstreetmap/iD), originally authored by [Minh Nguyễn](https://github.com/1ec5). The original JavaScript implementation established the regex patterns, EDTF outputconventions, and handling of circa markers, decades, centuries, thirds, and open-ended ranges. See [`LICENSES/iD-ISC.txt`](LICENSES/iD-ISC.txt) for the upstream license.
+
 This plugin was developed with extensive assistance from Claude (Anthropic). Claude helped design the validator rule set, implement the date normalization logic, and iterate on user-facing messages. All code was reviewed and tested by the author.
