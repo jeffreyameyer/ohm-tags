@@ -1,4 +1,4 @@
-// License: GPL. For details, see LICENSE file.
+// License: GPL v2 or later. For details, see LICENSE file.
 package org.openstreetmap.josm.plugins.ohmtags.validation;
 
 import static org.openstreetmap.josm.tools.I18n.tr;
@@ -197,6 +197,7 @@ public class DateTagTest extends Test {
     protected static final int CODE_ANY_EDTF_BASE_MISMATCH_UNRESOLVABLE = 4230;
     protected static final int CODE_PRESENT_START_DATE = 4231;
     protected static final int CODE_MORE_SPECIFIC_BASE = 4232;
+    protected static final int CODE_JULIAN_CONVERSION = 4233;
 
     /** Matches a full ISO date in {@code YYYY-MM-DD} form (astronomical, may be negative). */
     private static final Pattern FULL_ISO_DATE =
@@ -261,7 +262,7 @@ public class DateTagTest extends Test {
         // rather than a blocker to save.
         if (p.get("start_date") == null && !hasNaturalTag(p) && p.hasKeys()) {
             errors.add(TestError.builder(this, Severity.WARNING, CODE_MISSING_START_DATE)
-                .message(tr("[ohm] Man-made object without start_date"),
+                .message(tr("[ohm] Suspicious date - man-made object without start_date; unfixable, please review"),
                          tr("Please make every effort to attempt a reasonable range "
                           + "for the `start_date:edtf` tag and provide an explanation "
                           + "in the `start_date:source` tag."))
@@ -310,7 +311,7 @@ public class DateTagTest extends Test {
 
         String trimmed = value.substring(0, value.length() - 1);
         errors.add(TestError.builder(this, Severity.WARNING, CODE_AMBIGUOUS_TRAILING_HYPHEN)
-            .message(tr("[ohm] Ambiguous trailing hyphen in date; unfixable, please review"),
+            .message(tr("[ohm] Ambiguous date - trailing hyphen in date; unfixable, please review"),
                      tr("{0}={1}: could be a typo for {2}, an incomplete input, "
                         + "or an open-ended range {2}/. Manual review needed.",
                         baseKey, value, trimmed))
@@ -350,7 +351,7 @@ public class DateTagTest extends Test {
         if (p.get(baseKey + ":edtf") != null) return;
 
         errors.add(TestError.builder(this, Severity.WARNING, CODE_AMBIGUOUS_NEGATIVE)
-            .message(tr("[ohm] Ambiguous negative-year date; unfixable, please review"),
+            .message(tr("[ohm] Ambiguous date - negative-year date; unfixable, please review"),
                      tr("{0}={1}: could be astronomical BCE, a typo for {2}, "
                         + "a range like {3}, or part of a range missing its other side. "
                         + "Manual review needed.",
@@ -592,7 +593,7 @@ public class DateTagTest extends Test {
             Command fix = new ChangePropertyCommand(Arrays.asList(p), baseKey, null);
             errors.add(TestError.builder(this, Severity.WARNING, CODE_FUTURE_DATE)
                 .message(tr("[ohm] Suspicious date - >10 year into the future; autofix as removed"),
-                         tr("{0}={1} is more than ten years in the future. Likely a typo; delete the key?",
+                         tr("{0}={1} is more than ten years in the future. Possibly a typo? Delete the key?",
                             baseKey, value))
                 .primitives(p)
                 .fix(() -> fix)
@@ -667,7 +668,7 @@ public class DateTagTest extends Test {
      * {@code start_date:edtf} value of the form {@code "\" + <end_date value>}
      * (literal backslash followed by exactly the end_date value). If the
      * last editor is the bot AND {@code :edtf} has this exact shape, it's
-     * bot-authored garbage: warn, offer to delete both {@code start_date}
+     * bot-authored invalid pattern: warn, offer to delete both {@code start_date}
      * and {@code start_date:edtf} to restore the pre-bot state (no
      * {@code start_date}, just {@code end_date}).
      *
@@ -936,8 +937,8 @@ public class DateTagTest extends Test {
             if (baseValue != null && !baseValue.isEmpty()) {
                 errors.add(TestError.builder(this, Severity.WARNING,
                                              CODE_ANY_EDTF_BASE_MISMATCH_UNRESOLVABLE)
-                    .message(tr("[ohm] Date/EDTF mismatch - *_date:edtf does not describe "
-                              + "*_date tag; cannot be fixed, please review"),
+                    .message(tr("[ohm] Date mismatch - *_date:edtf does not describe "
+                              + "*_date tag; unfixable, please review"),
                              tr("{0}={1} is invalid, so it cannot be compared to "
                               + "{2}={3}. After normalizing {0}, verify that {2} "
                               + "still agrees.",
@@ -986,21 +987,26 @@ public class DateTagTest extends Test {
                 cmds.add(new ChangePropertyCommand(Arrays.asList(p), baseKey + ":raw", base));
                 Command fix = new SequenceCommand(tr("Mark {0} as ongoing", baseKey), cmds);
                 errors.add(TestError.builder(this, Severity.WARNING, CODE_PRESENT_MARKER)
-                    .message(tr("[ohm] Invalid end_date, fixable"),
+                    .message(tr("[ohm] Invalid date - end_date=present; fixable"),
                              tr("{0}={1} means an ongoing feature. Clear base and :edtf, mark with :raw={1}?",
                                 baseKey, base))
                     .primitives(p)
                     .fix(() -> fix)
                     .build());
             } else {
-                // start_date=present: semantically nonsensical. No fix; user must decide.
+                // start_date=present: not a meaningful date value. Delete start_date and :edtf.
+                List<Command> cmds = new ArrayList<>();
+                cmds.add(new ChangePropertyCommand(Arrays.asList(p), baseKey, null));
+                cmds.add(new ChangePropertyCommand(Arrays.asList(p), baseKey + ":edtf", null));
+                Command fix = new SequenceCommand(tr("Delete {0}", baseKey), cmds);
                 errors.add(TestError.builder(this, Severity.WARNING, CODE_PRESENT_START_DATE)
-                    .message(tr("[ohm] Invalid start_date"),
-                             tr("{0}={1} does not make semantic sense: ''present'' "
-                              + "describes an ongoing state, not a start moment. "
-                              + "Manual review needed.",
+                    .message(tr("[ohm] Invalid date - start_date=present; autofix to no start_date"),
+                             tr("{0}={1}: ''present'' describes an ongoing state, not a start point. "
+                              + "''present'' is only valid as end_date. "
+                              + "Delete {0} and {0}:edtf?",
                                 baseKey, base))
                     .primitives(p)
+                    .fix(() -> fix)
                     .build());
             }
             return;
@@ -1180,7 +1186,7 @@ public class DateTagTest extends Test {
             Command fix = new ChangePropertyCommand(Arrays.asList(p),
                                                     baseKey + ":raw", null);
             errors.add(TestError.builder(this, Severity.WARNING, CODE_RAW_MISMATCH_HUMAN)
-                .message(tr("[ohm] Date mismatch: across date tags"),
+                .message(tr("[ohm] Date mismatch - across date tags; autofix by deleting :raw"),
                          tr("{0} and {0}:edtf don''t match {0}:raw={1}. "
                             + "Delete the machine-generated :raw tag?",
                             baseKey, raw))
@@ -1232,7 +1238,7 @@ public class DateTagTest extends Test {
                 Command fix = new ChangePropertyCommand(Arrays.asList(p),
                                                         baseKey, expectedBase);
                 errors.add(TestError.builder(this, Severity.WARNING, CODE_EDTF_MISSING_BASE)
-                    .message(tr("[ohm] Date mismatch: *_date:edtf & no *_date tag; autofix as set *_date based on *_date:edtf"),
+                    .message(tr("[ohm] Date mismatch - *_date:edtf & no *_date tag; autofix as set *_date based on *_date:edtf"),
                              tr("{0}:edtf={1} implies {0}={2}.",
                                 baseKey, edtf, expectedBase))
                     .primitives(p)
@@ -1255,7 +1261,7 @@ public class DateTagTest extends Test {
 
         // Case 3: base and :edtf disagree, no :raw to reconcile against.
         errors.add(TestError.builder(this, Severity.WARNING, CODE_EDTF_BASE_MISMATCH)
-            .message(tr("[ohm] Date mismatch: *_date not a valid *_date:edtf match; unfixable, please review"),
+            .message(tr("[ohm] Date mismatch - *_date not a valid *_date:edtf match; unfixable, please review"),
                      tr("{0}={1} but {0}:edtf={2} implies {0}={3}. "
                         + "Manual review needed.",
                         baseKey, base, edtf, expectedBase))
@@ -1283,7 +1289,7 @@ public class DateTagTest extends Test {
 
         errors.add(TestError.builder(this, Severity.WARNING,
                                      CODE_MORE_SPECIFIC_BASE)
-            .message(tr("[ohm] Date mismatch: *_date more precise than *_date:edtf; autofix as *_date:edtf=*_date"),
+            .message(tr("[ohm] Date mismatch - *_date more precise than *_date:edtf; autofix as *_date:edtf=*_date"),
                      tr("{0}={1} is more specific than {0}:edtf={2}. "
                       + "Manual review needed: confirm which value is authoritative.",
                         baseKey, base, edtf))
@@ -1421,8 +1427,8 @@ public class DateTagTest extends Test {
             cmds.add(new ChangePropertyCommand(Arrays.asList(p), baseKey, gregorian));
             // Deliberately no :edtf — EDTF has no standard form for Julian dates.
             Command fix = new SequenceCommand(tr("Convert Julian date for {0}", baseKey), cmds);
-            errors.add(TestError.builder(this, Severity.WARNING, CODE_NEEDS_NORMALIZATION)
-                .message(tr("[ohm] Julian date needs Gregorian conversion"),
+            errors.add(TestError.builder(this, Severity.WARNING, CODE_JULIAN_CONVERSION)
+                .message(tr("[ohm] Invalid date - Julian date; fixable, please review Gregorian conversion"),
                          tr("{0}={1} \u2192 {0}={2} (Gregorian), {0}:note added",
                             baseKey, base, gregorian))
                 .primitives(p)
@@ -1485,7 +1491,7 @@ public class DateTagTest extends Test {
             String messageTitle;
             if (originalWasEdtf) {
                 fix = buildBaseAndEdtfFix(p, baseKey, passthroughBase, cleaned);
-                messageTitle = tr("[ohm] Invalid date: *_date contains an EDTF date, fixable");
+                messageTitle = tr("[ohm] Invalid date - *_date contains an EDTF date; fixable, please review suggested fix");
             } else {
                 fix = buildTripleFix(p, baseKey, passthroughBase, cleaned, base);
                 messageTitle = tr("[ohm] Invalid date - *_date; fixable, please review suggested fix");

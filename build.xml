@@ -3,11 +3,11 @@
 
     <!-- === Configuration =================================================== -->
     <!-- Minimum JOSM version this plugin requires (svn revision). Bump as needed. -->
-    <property name="plugin.main.version" value="18877"/>
-    <property name="plugin.author"       value="Jeff"/>
+    <property name="plugin.main.version" value="19000"/>
+    <property name="plugin.author"       value="Jeff Meyer"/>
     <property name="plugin.class"        value="org.openstreetmap.josm.plugins.ohmtags.OhmTagsPlugin"/>
-    <property name="plugin.description"  value="OHM tag validator: validates date tags (start_date, end_date, :edtf, :raw) and tag consistency (names, wikidata, sources) for OpenHistoricalMap."/>
-    <property name="plugin.link"         value="https://github.com/YOUR_USER/ohm-tags"/>
+    <property name="plugin.description"  value="Validator for OpenHistoricalMap: checks start_date/end_date formatting and EDTF normalization, name conventions, source tagging, and Wikidata/Wikipedia cross-references."/>
+    <property name="plugin.link"         value="https://github.com/jeffreyameyer/ohm-tags"/>
     <property name="plugin.canloadatruntime" value="true"/>
 
     <!-- === Paths =========================================================== -->

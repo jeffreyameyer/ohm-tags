@@ -75,14 +75,18 @@ public class RunTests {
     }
 
     private static String formatLine(TestError e, OsmPrimitive p) {
-        String primField = (p == null) ? "-/-"
-                : p.getType().getAPIName() + "/" + p.getId();
+        String sev = e.getSeverity().name().substring(0, 1);
+        String primField = (p == null) ? "-/-" : primAbbrev(p) + "/" + p.getId();
         String desc = (e.getDescription() != null) ? e.getDescription() : "";
-        return String.join("\t",
-                e.getSeverity().name(),
-                String.valueOf(e.getCode()),
-                e.getMessage(),
-                primField,
-                desc);
+        return String.join("   ", sev, primField, e.getMessage(), desc);
+    }
+
+    private static String primAbbrev(OsmPrimitive p) {
+        switch (p.getType()) {
+            case NODE:     return "n";
+            case WAY:      return "w";
+            case RELATION: return "r";
+            default:       return p.getType().getAPIName();
+        }
     }
 }

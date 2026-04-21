@@ -1,4 +1,4 @@
-// License: GPL. For details, see LICENSE file.
+// License: GPL v2 or later. For details, see LICENSE file.
 package org.openstreetmap.josm.plugins.ohmtags;
 
 import org.openstreetmap.josm.data.validation.OsmValidator;

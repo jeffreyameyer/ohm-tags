@@ -1,48 +1,30 @@
-# ohm-dates — JOSM plugin
+# ohm-tags — JOSM validator plugin for OpenHistoricalMap
 
-Validates and normalizes OpenHistoricalMap date tags to EDTF (ISO 8601-2).
+Validates and normalizes OHM-style date tags and source/name consistency for [OpenHistoricalMap](https://www.openhistoricalmap.org/).
 
 ## What it does
 
-Adds a validator test that checks these tags on every primitive:
+**Date validation (`DateTagTest`)** checks `start_date`, `end_date`, and their `:edtf` and `:raw` siblings. It normalizes values to EDTF (ISO 8601-2), detects ambiguous inputs (decades vs. centuries, negative years, trailing hyphens), flags suspicious dates (year-boundary padding, far-future values, inverted start/end), handles Julian-calendar conversion, and reconciles mismatches between base tags and their `:edtf` counterparts. Most checks offer an autofix; a few require manual review.
 
-- `start_date`
-- `end_date`
-- `start_date:edtf`
+**Tag consistency (`TagConsistencyTest`)** checks names, source tags, and external-identifier references. It warns on named features missing a plain `name` or `wikidata` tag, flags `source` values that are misformatted URLs or should be split into `source` / `source:name` / `source:N` keys, consolidates redundant `source:url` tags, and checks that `wikipedia` and `wikidata` tags are present when referenced by attribute-source keys.
 
-For `start_date` / `end_date`: if the sibling `:edtf` tag is missing or doesn't
-match the normalized form, raises a **warning** with an autofix that writes the
-normalized EDTF to `<key>:edtf`.
-
-For `start_date:edtf` itself: if the value isn't already normalized, raises a
-warning with an autofix that overwrites it in place.
-
-For unparseable date values: raises an **error** (no autofix available).
-
-## Supported input formats
-
-All formats from the iD/OHM editor's `utilEDTFFromOSMDateString`:
-
-- `YYYY`, `YYYY-MM`, `YYYY-MM-DD`, optionally with ` BC` / ` BCE`
-- `~YYYY` — circa
-- `YYYY..ZZZZ` — range
-- `YYYY0s` — decade (e.g. `1850s`)
-- `CNN` — century (e.g. `C19`)
-- `early|mid|late YYYY0s`
-- `early|mid|late CNN`
-- `before YYYY-MM-DD`, `after YYYY-MM-DD`
+See [`docs/MESSAGES.md`](docs/MESSAGES.md) for the full list of validator messages, triggers, and autofixes.
 
 ## Building
 
-Assumes the JOSM source tree layout (plugin dir sits at `josm/plugins/ohm-dates/`
-alongside a built `josm/core/dist/josm-custom.jar`). If your layout differs,
-override the `josm` property:
+Assumes the JOSM source tree layout with the plugin directory at `josm/plugins/ohm-tags/` alongside a built `josm/core/dist/josm-custom.jar`. If your layout differs, override the `josm` property:
 
 ```
 ant -Djosm=/path/to/josm-custom.jar dist
 ```
 
-Output: `dist/ohm-dates.jar`.
+Output: `dist/ohm-tags.jar`.
+
+To run the regression test harness against `test/test_data.osm`:
+
+```
+ant test
+```
 
 ## Installing
 
@@ -50,16 +32,14 @@ Output: `dist/ohm-dates.jar`.
 ant install
 ```
 
-This copies the jar into the JOSM plugins directory
-(`~/.josm/plugins/` on Linux, `~/Library/JOSM/plugins/` on macOS,
-`%APPDATA%/JOSM/plugins/` on Windows). Restart JOSM and enable the plugin in
-Preferences → Plugins.
+This copies the jar into the JOSM plugins directory (`~/.josm/plugins/` on Linux, `~/Library/JOSM/plugins/` on macOS, `%APPDATA%/JOSM/plugins/` on Windows). Restart JOSM and enable the plugin in Preferences → Plugins.
 
 ## Using
 
-After install: Validation → Validate (shortcut **V**) runs all enabled tests.
-Errors appear in the Validation Results panel. Select one or more and click
-"Fix" (or use "Fix selected errors" for batch apply).
+After install: Validation → Validate (shortcut **V**) runs all enabled tests. Findings appear in the Validation Results panel. Select one or more and click "Fix" (or "Fix selected errors" for batch apply) to apply any available autofix.
 
-The test registers as "OHM date tags" in Preferences → Validator Tests and can
-be disabled there.
+Both tests can be individually enabled or disabled in Preferences → Validator Tests.
+
+## Acknowledgments
+
+This plugin was developed with extensive assistance from Claude (Anthropic). Claude helped design the validator rule set, implement the date normalization logic, and iterate on user-facing messages. All code was reviewed and tested by the author.

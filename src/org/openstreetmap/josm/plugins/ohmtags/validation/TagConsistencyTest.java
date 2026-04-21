@@ -1,4 +1,4 @@
-// License: GPL. For details, see LICENSE file.
+// License: GPL v2 or later. For details, see LICENSE file.
 package org.openstreetmap.josm.plugins.ohmtags.validation;
 
 import static org.openstreetmap.josm.tools.I18n.tr;
@@ -239,7 +239,7 @@ public class TagConsistencyTest extends Test {
         // Rule: any name-family keys but no plain name.
         if (!hasPlainName) {
             errors.add(TestError.builder(this, Severity.WARNING, CODE_MISSING_PLAIN_NAME)
-                .message(tr("[ohm] Missing name=* tag; unfixable, please review"),
+                .message(tr("[ohm] Missing tag - name=*; unfixable, please review"),
                          tr("Feature has name-family keys ({0}, etc.) but no plain "
                             + "''name'' key. Please add a canonical name.",
                             firstNameFamilyKeyFound(p)))
@@ -250,7 +250,7 @@ public class TagConsistencyTest extends Test {
         // Rule: named feature without wikidata.
         if (p.get("wikidata") == null) {
             errors.add(TestError.builder(this, Severity.WARNING, CODE_MISSING_WIKIDATA)
-                .message(tr("[ohm] Missing wikidata tag; unfixable, please review and add a Wikidata QID"),
+                .message(tr("[ohm] Missing tag - wikidata; unfixable, please review and add a Wikidata QID"),
                          tr("This named feature has no ''wikidata'' tag. "
                             + "Wikidata is the preferred identifier for cross-referencing."))
                 .primitives(p)
@@ -260,7 +260,7 @@ public class TagConsistencyTest extends Test {
         // Rule: named feature without any source*.
         if (!hasAnySourceTag(p)) {
             errors.add(TestError.builder(this, Severity.WARNING, CODE_MISSING_SOURCE)
-                .message(tr("[ohm] Missing source tag: named feature without source; unfixable, please review"),
+                .message(tr("[ohm] Missing tag - source; named feature without source; unfixable, please review"),
                          tr("This named feature has no ''source'' tag. "
                             + "Please document the provenance of this feature."))
                 .primitives(p)
@@ -311,7 +311,7 @@ public class TagConsistencyTest extends Test {
         // Wikipedia / Wikidata as source: specific warnings, no autofix.
         if ("wikipedia".equalsIgnoreCase(value)) {
             errors.add(TestError.builder(this, Severity.WARNING, CODE_SOURCE_IS_WIKIPEDIA)
-                .message(tr("[ohm] Suspicious source=Wikipedia"),
+                .message(tr("[ohm] Suspicious source - source=wikipedia; unfixable, please review"),
                          tr("{0}={1}: Wikipedia is not a reasonable source for "
                             + "geometry claims. Please link to an actual map, image, "
                             + "or other primary source.",
@@ -322,7 +322,7 @@ public class TagConsistencyTest extends Test {
         }
         if ("wikidata".equalsIgnoreCase(value)) {
             errors.add(TestError.builder(this, Severity.WARNING, CODE_SOURCE_IS_WIKIDATA)
-                .message(tr("[ohm] Suspicious source=Wikidata"),
+                .message(tr("[ohm] Suspicious source - source=wikidata; unfixable, please review"),
                          tr("{0}={1}: Wikidata is not a reasonable source for "
                             + "geometry claims. Please link to an actual map, image, "
                             + "or other primary source.",
@@ -422,7 +422,7 @@ public class TagConsistencyTest extends Test {
                 tr("Split source into URL and name"), cmds);
             errors.add(TestError.builder(this, Severity.WARNING,
                                          CODE_SOURCE_SEMICOLON_URL_TEXT)
-                .message(tr("[ohm] Source tag contains multiple value types - text & URL"),
+                .message(tr("[ohm] Source optimization - source contains one URL and one text string; autofix by splitting into source and source:name"),
                          tr("{0}={1}: move URL to source and text to source:name?", key, value))
                 .primitives(p)
                 .fix(() -> fix)
@@ -583,7 +583,7 @@ public class TagConsistencyTest extends Test {
         if ("wikipedia".equalsIgnoreCase(value)) {
             if (!hasAnyKeyStartingWith(p, "wikipedia")) {
                 errors.add(TestError.builder(this, Severity.WARNING, CODE_ATTR_SOURCE_WIKIPEDIA)
-                    .message(tr("[ohm] Missing Wikipedia tag; unfixable, please review and add an appropriate Wikipedia article"),
+                    .message(tr("[ohm] Missing wikipedia tag; unfixable, please review and add an appropriate wikipedia article"),
                              tr("{0}={1}: please add an appropriate ''wikipedia'' tag.",
                                 key, value))
                     .primitives(p)
@@ -594,7 +594,7 @@ public class TagConsistencyTest extends Test {
         if ("wikidata".equalsIgnoreCase(value)) {
             if (p.get("wikidata") == null) {
                 errors.add(TestError.builder(this, Severity.WARNING, CODE_ATTR_SOURCE_WIKIDATA)
-                    .message(tr("[ohm] Missing Wikidata tag; wikidata referenced as an attribute source. Please add an appropriate Wikidata tag."),
+                    .message(tr("[ohm] Missing wikidata tag; wikidata referenced as an attribute source. Please add an appropriate wikidata tag."),
                              tr("{0}={1}: please add an appropriate ''wikidata'' tag.",
                                 key, value))
                     .primitives(p)

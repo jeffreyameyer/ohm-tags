@@ -1,4 +1,10 @@
-// License: GPL. For details, see LICENSE file.
+// License: GPL v2 or later. For details, see LICENSE file.
+//
+// The date-normalization algorithms in this class are derived from
+// utilEDTFFromOSMDateString() in the OpenHistoricalMap fork of the
+// iD editor, originally authored by Minh Nguyễn (GitHub: @1ec5).
+// See: https://github.com/OpenHistoricalMap/iD/commit/4d5cb19
+// Original code licensed under the ISC license; see LICENSES/iD-ISC.txt.
 package org.openstreetmap.josm.plugins.ohmtags;
 
 import java.util.Optional;
