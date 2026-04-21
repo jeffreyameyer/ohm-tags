@@ -3,7 +3,7 @@
 All messages use `WARNING` severity. Titles follow the pattern:
 `[ohm] <Category> - <what>; <fixable|unfixable>, please review [<action>]`
 
-**†** = does not currently fire on `test/test_data.osm`
+References to "rules" below are defined in the javadoc in DateTagTest.java.
 
 ---
 
@@ -100,7 +100,7 @@ All messages use `WARNING` severity. Titles follow the pattern:
 
 | Code | Title |
 |------|-------|
-| 4217 | `[ohm] Invalid date - month in start_date or end_date; autofix to YYYY` |
+| 4217 | `[ohm] Invalid date - invalid month in start_date or end_date; autofix to YYYY` |
 | 4218 | `[ohm] Invalid date - invalid day in start_date or end_date; autofix to YYYY-MM` |
 | 4222 | `[ohm] Invalid date - month/day mismatch; too many days in the month in start_date or end_date; unfixable, please review` |
 
@@ -318,14 +318,19 @@ All messages use `WARNING` severity. Titles follow the pattern:
 |------|-------|
 | 4311 | `[ohm] Source keys with duplicate values - source=source:url; autofix by deleting source:url` |
 | 4312 | `[ohm] Source mismatch - no source tag and valid source:url tag; autofix by moving *:url value to source=` |
+| 4312 | `[ohm] Source mismatch - source and source:url are different URLs; autofix by moving source:url to source:N` |
 | 4313 | `[ohm] Source optimization - source contains a name and source:url contains a URL; autofix by swapping these` |
 
 **4311 trigger:** `source` and `source:url` hold the same value.  
 **4311 fix:** Deletes `source:url`.
 
-**4312 trigger:** `source:url` is set but `source` is absent.  
+**4312 trigger (no source):** `source:url` is set but `source` is absent.  
 **4312 fix:** Moves `source:url` value to `source`.  
 **4312 description:** _source:url={url} should live in source._
+
+**4312 trigger (both URLs):** Both `source` and `source:url` are URLs but hold different values.  
+**4312 fix:** Moves `source:url` to the next available `source:N` slot (N = max existing + 1). Leaves `source` untouched.  
+**4312 description:** _source={url1} and source:url={url2} are different URLs. Move source:url to the next numbered source key?_
 
 **4313 trigger:** `source` holds a name string while `source:url` holds a URL — they are in the wrong keys.  
 **4313 fix:** Swaps values: URL → `source`, name → `source:name`.  

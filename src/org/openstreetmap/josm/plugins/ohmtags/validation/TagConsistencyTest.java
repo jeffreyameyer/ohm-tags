@@ -542,34 +542,49 @@ public class TagConsistencyTest extends Test {
             return;
         }
 
-        // Cases 2 and 3 both do the three-step rewrite. Choose the
-        // source:name value based on whether source:name already exists.
-        String existingName = p.get("source:name");
-        String newName;
-        if (existingName == null || existingName.isEmpty()) {
-            newName = source;
-        } else {
-            // Append with semicolon separator, per spec.
-            newName = existingName + ";" + source;
-        }
-        List<Command> cmds = new ArrayList<>();
-        cmds.add(new ChangePropertyCommand(Arrays.asList(p), "source:name", newName));
-        cmds.add(new ChangePropertyCommand(Arrays.asList(p), "source", sourceUrl));
-        cmds.add(new ChangePropertyCommand(Arrays.asList(p), "source:url", null));
-        Command fix = new SequenceCommand(tr("Consolidate source and source:url"), cmds);
-
-        // Case 2 vs 3 message — whether source is URL or text.
         boolean sourceIsUrl = URL_WITH_SCHEME.matcher(source).matches();
-        int code = sourceIsUrl ? CODE_SOURCE_URL_CONFLICTS : CODE_SOURCE_URL_WITH_NAME;
-        String message = sourceIsUrl
-            ? tr("[ohm] Source mismatch - source contains url that does not match source:url; unfixable, please review")
-            : tr("[ohm] Source optimization - source contains a name and source:url contains a URL; autofix by swapping these");
-        errors.add(TestError.builder(this, Severity.WARNING, code)
-            .message(message,
-                     tr("Consolidate: source:url \u2192 source, source \u2192 source:name?"))
-            .primitives(p)
-            .fix(() -> fix)
-            .build());
+
+        if (sourceIsUrl) {
+            // Case 2: both source and source:url are URLs but differ.
+            // Move source:url to the next available source:N slot.
+            errors.add(TestError.builder(this, Severity.WARNING, CODE_SOURCE_URL_CONFLICTS)
+                .message(tr("[ohm] Source mismatch - source and source:url are different URLs; autofix by moving source:url to source:N"),
+                         tr("source={0} and source:url={1} are different URLs. Move source:url to the next numbered source key?",
+                            source, sourceUrl))
+                .primitives(p)
+                .fix(() -> {
+                    int maxN = p.keySet().stream()
+                        .map(k -> SOURCE_KEY.matcher(k))
+                        .filter(java.util.regex.Matcher::matches)
+                        .map(m -> m.group(1))
+                        .filter(g -> g != null)
+                        .mapToInt(Integer::parseInt)
+                        .max()
+                        .orElse(0);
+                    String newKey = "source:" + (maxN + 1);
+                    List<Command> moveCmds = new ArrayList<>();
+                    moveCmds.add(new ChangePropertyCommand(Arrays.asList(p), newKey, sourceUrl));
+                    moveCmds.add(new ChangePropertyCommand(Arrays.asList(p), "source:url", null));
+                    return new SequenceCommand(tr("Move source:url to {0}", newKey), moveCmds);
+                })
+                .build());
+        } else {
+            // Case 3: source is text, source:url is a URL — swap them.
+            String existingName = p.get("source:name");
+            String newName = (existingName == null || existingName.isEmpty())
+                ? source : existingName + ";" + source;
+            List<Command> cmds = new ArrayList<>();
+            cmds.add(new ChangePropertyCommand(Arrays.asList(p), "source:name", newName));
+            cmds.add(new ChangePropertyCommand(Arrays.asList(p), "source", sourceUrl));
+            cmds.add(new ChangePropertyCommand(Arrays.asList(p), "source:url", null));
+            Command fix = new SequenceCommand(tr("Consolidate source and source:url"), cmds);
+            errors.add(TestError.builder(this, Severity.WARNING, CODE_SOURCE_URL_WITH_NAME)
+                .message(tr("[ohm] Source optimization - source contains a name and source:url contains a URL; autofix by swapping these"),
+                         tr("Consolidate: source:url \u2192 source, source \u2192 source:name?"))
+                .primitives(p)
+                .fix(() -> fix)
+                .build());
+        }
     }
 
     /**
@@ -583,7 +598,7 @@ public class TagConsistencyTest extends Test {
         if ("wikipedia".equalsIgnoreCase(value)) {
             if (!hasAnyKeyStartingWith(p, "wikipedia")) {
                 errors.add(TestError.builder(this, Severity.WARNING, CODE_ATTR_SOURCE_WIKIPEDIA)
-                    .message(tr("[ohm] Missing wikipedia tag; unfixable, please review and add an appropriate wikipedia article"),
+                    .message(tr("[ohm] Missing tag - wikipedia, referenced in source keys; unfixable, please review and add an appropriate Wikipedia article"),
                              tr("{0}={1}: please add an appropriate ''wikipedia'' tag.",
                                 key, value))
                     .primitives(p)
@@ -594,7 +609,7 @@ public class TagConsistencyTest extends Test {
         if ("wikidata".equalsIgnoreCase(value)) {
             if (p.get("wikidata") == null) {
                 errors.add(TestError.builder(this, Severity.WARNING, CODE_ATTR_SOURCE_WIKIDATA)
-                    .message(tr("[ohm] Missing wikidata tag; wikidata referenced as an attribute source. Please add an appropriate wikidata tag."),
+                    .message(tr("[ohm] Missing tag - wikidata, referenced in source keys; unfixable, please add appropriate Wikidata QID"),
                              tr("{0}={1}: please add an appropriate ''wikidata'' tag.",
                                 key, value))
                     .primitives(p)
