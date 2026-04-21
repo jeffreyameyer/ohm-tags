@@ -1,1 +1,20 @@
+# Build output
+build/
+dist/
+*.class
+*.jar
+
+# macOS
+.DS_Store
+._*
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+Thumbs.db
+
+# AI
 CLAUDE.md
